@@ -1,11 +1,13 @@
 package bsa.java.concurrency.image;
 
+import bsa.java.concurrency.image.dto.SearchResponseDTO;
 import bsa.java.concurrency.image.dto.SearchResultDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,8 +26,8 @@ public class ImageController {
 
     @PostMapping("/search")
     @ResponseStatus(HttpStatus.OK)
-    public List<SearchResultDTO> searchMatches(@RequestParam("image") MultipartFile file, @RequestParam(value = "threshold", defaultValue = "0.9") double threshold) {
-        return null;
+    public List<SearchResponseDTO> searchMatches(@RequestParam("image") MultipartFile file, @RequestParam(value = "threshold", defaultValue = "0.9") double threshold) throws IOException {
+        return imageService.searchMatches(file, threshold);
     }
 
     @DeleteMapping("/{id}")

@@ -15,16 +15,20 @@ public class FileSystemService implements FileSystem {
     private String imageFolderPath;
 
     @Override
-    public CompletableFuture<Path> saveFile(byte[] incomeFile) throws IOException {
-        File dir = new File(imageFolderPath);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        File file = new File(imageFolderPath + "/" + UUID.randomUUID() + ".jpg");
-        try (OutputStream fileOutputStream = new FileOutputStream(file)) {
-            fileOutputStream.write(incomeFile);
-            return CompletableFuture.completedFuture(file.toPath());
-        }
+    public CompletableFuture<Path> saveFile(byte[] incomeFile) throws RuntimeException {
+        return CompletableFuture.supplyAsync(() -> {
+            File dir = new File(imageFolderPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File file = new File(imageFolderPath + "/" + UUID.randomUUID() + ".jpg");
+            try (OutputStream fileOutputStream = new FileOutputStream(file)) {
+                fileOutputStream.write(incomeFile);
+                return file.toPath();
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
+        });
     }
 
     @Override

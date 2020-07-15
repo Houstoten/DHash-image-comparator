@@ -6,4 +6,5 @@ public interface SearchResultDTO {
     UUID getImageId();
     Double getMatchPercent();
     String getImageUrl();
+    String setImageUrl(String url);
 }

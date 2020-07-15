@@ -28,13 +28,9 @@ public class ImageEntity {
     private String path;
 
     public ImageEntity(ExecutorService executorService, FileSystem fileSystemService, Hasher hasher, byte[] image) {
-        try {
             var sourcePath = fileSystemService.saveFile(image).join();
             hash = hasher.diagonalHash(image).join();
             id = UUID.fromString(sourcePath.getFileName().toString().split("\\.")[0]);
             path = sourcePath.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
