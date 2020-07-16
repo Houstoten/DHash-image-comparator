@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -66,7 +67,11 @@ public class ImageService {
         }
     }
 
-    public List<SearchResponseDTO> searchMatches(MultipartFile file, double threshold) throws RuntimeException, IOException {
+    public List<SearchResponseDTO> searchMatches(MultipartFile file, double threshold) throws ImageBrokenException
+            , IOException, InputMismatchException {
+        if(threshold<0||threshold>1){
+            throw new InputMismatchException(threshold+" out of bounds");
+        }
         var image = file.getBytes();
         var hashReceived = hashCalculator.diagonalHash(image).join();
         var list = imageRepository.findPathByHash(hashReceived, threshold).join();

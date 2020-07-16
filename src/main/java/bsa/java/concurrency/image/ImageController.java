@@ -6,11 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,6 +20,7 @@ import java.util.UUID;
 @RequestMapping("/image")
 @ControllerAdvice
 @Slf4j
+@Validated
 public class ImageController {
 
     @Autowired
@@ -59,6 +62,10 @@ public class ImageController {
             log.error("Match search error:  " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("Whoops, here is an error", e.getMessage()));
+        } catch (InputMismatchException e) {
+            log.error("Threshold error :  " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("Whoops, here is an error", "threshold " + threshold + " out of bounds"));
         }
     }
 
