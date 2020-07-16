@@ -2,6 +2,8 @@ package bsa.java.concurrency.fs;
 
 import bsa.java.concurrency.exception.ImageBrokenException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Service
 @Slf4j
@@ -18,6 +21,10 @@ public class FileSystemService implements FileSystem {
 
     @Value("${path.imageFolder}")
     private String imageFolderPath;
+
+    @Qualifier("asyncForMethods")
+    @Autowired
+    private Executor executor;
 
     @Override
     @Async("asyncForMethods")
@@ -34,7 +41,7 @@ public class FileSystemService implements FileSystem {
             } catch (IOException e) {
                 throw new ImageBrokenException();
             }
-        });
+        },executor);
     }
 
     @Override
@@ -44,7 +51,7 @@ public class FileSystemService implements FileSystem {
             new File(imageFolderPath + "/" + fileName + ".jpg")
                     .delete();
             return null;
-        });
+        }, executor);
     }
 
     @Override
@@ -61,6 +68,6 @@ public class FileSystemService implements FileSystem {
                 e.printStackTrace();
                 return null;
             }
-        });
+        }, executor);
     }
 }
