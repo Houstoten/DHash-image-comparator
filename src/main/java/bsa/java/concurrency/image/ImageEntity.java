@@ -5,6 +5,7 @@ import bsa.java.concurrency.exception.ImageBrokenException;
 import bsa.java.concurrency.fs.FileSystem;
 import bsa.java.concurrency.hasher.Hasher;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
@@ -14,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 
 @NoArgsConstructor
 @Entity
+@Slf4j
 public class ImageEntity {
 
     @Id
@@ -33,6 +35,7 @@ public class ImageEntity {
                 path = sourcePath.toString();
                 return null;
             }).get();
+            log.info("Image entity with id " + id + " created");
         } catch (InterruptedException | ExecutionException e) {
             throw new ImageBrokenException();
         }

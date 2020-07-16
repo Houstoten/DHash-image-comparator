@@ -1,5 +1,6 @@
 package bsa.java.concurrency.hasher;
 
+import bsa.java.concurrency.exception.ImageBrokenException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ public class HashCalculator implements Hasher {
     public CompletableFuture<Long> diagonalHash(byte[] image) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                log.info("async started in hasher by thread " + Thread.currentThread().getId());
                 Image img = ImageIO.read(new ByteArrayInputStream(image))
                         .getScaledInstance(9, 9, Image.SCALE_SMOOTH);
                 BufferedImage imgGray = new BufferedImage(9
@@ -38,10 +38,9 @@ public class HashCalculator implements Hasher {
                         hash <<= 1;
                     }
                 }
-                log.info("async ended in hasher by thread " + Thread.currentThread().getId());
                 return hash;
             } catch (IOException e) {
-                throw new RuntimeException();
+                throw new ImageBrokenException();
             }
         });
     }
