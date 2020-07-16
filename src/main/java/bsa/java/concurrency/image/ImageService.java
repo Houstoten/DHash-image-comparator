@@ -67,9 +67,12 @@ public class ImageService {
     }
 
     public List<SearchResponseDTO> searchMatches(MultipartFile file, double threshold) throws RuntimeException, IOException {
-        var list = imageRepository.findPathByHash(hashCalculator.diagonalHash(file.getBytes()).join(), threshold).join();
+        var image = file.getBytes();
+        var hashReceived = hashCalculator.diagonalHash(image).join();
+        var list = imageRepository.findPathByHash(hashReceived, threshold).join();
         if (list.isEmpty()) {
-            executor.execute(() -> batchUploadImages(new MultipartFile[]{file}));
+            executor.execute(() -> imageRepository.save(ImageEntity.fullfill(new ImageEntity()
+                    , fileSystemService.saveFile(image).join(), hashReceived)));
         }
         return list.stream()
                 .map(result -> new SearchResponseDTO(result.getImageId()

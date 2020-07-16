@@ -11,15 +11,16 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ImageRepository extends JpaRepository<ImageEntity, UUID> {
 
+
+    //    @Query(value = "SELECT path as imageUrl, cast(id as varchar) as imageId, " +
+//            " (1 - LENGTH( REPLACE( CAST ( cast((hash # :toSearch) as bit(64)) " +
+//            " AS TEXT ), '0', ''))\\:\\:decimal / 64) as matchPercent " +
+//            " FROM image_entity " +
+//            " where (1 - LENGTH( REPLACE( CAST ( cast((hash # :toSearch) as bit(64)) " +
+//            " AS TEXT ), '0', ''))\\:\\:decimal / 64) >= :threshold", nativeQuery = true)//Query with not migrated function
     @Async
-    @Query(value = "SELECT path as imageUrl, cast(id as varchar) as imageId, (1 - LENGTH( REPLACE( CAST ( cast((hash # :toSearch) as bit(64)) " +
-            " AS TEXT ), '0', ''))\\:\\:decimal / 64) as matchPercent " +
-            " FROM image_entity " +
-            " where (1 - LENGTH( REPLACE( CAST ( cast((hash # :toSearch) as bit(64)) " +
-            " AS TEXT ), '0', ''))\\:\\:decimal / 64) >= :threshold", nativeQuery = true)
+    @Query(value = "SELECT path as imageUrl, cast(id as varchar) as imageId, " +
+            "match_percent(hash, :toSearch) as matchPercent FROM image_entity " +
+            "where match_percent(hash, :toSearch) >= :threshold", nativeQuery = true)
     CompletableFuture<List<SearchResultDTO>> findPathByHash(long toSearch, double threshold);
 }
-//    SELECT path, hash as bits FROM public.image_entity
-//        where (1 - LENGTH( REPLACE( CAST ((hash # -4777783188396986484)::bit(64)
-//        AS TEXT ), '0', ''))::decimal / 64) >= 1
-//        ORDER BY id ASC
