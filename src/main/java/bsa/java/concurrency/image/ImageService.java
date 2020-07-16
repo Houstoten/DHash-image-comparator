@@ -1,12 +1,15 @@
 package bsa.java.concurrency.image;
 
+import bsa.java.concurrency.exception.ImageBrokenException;
 import bsa.java.concurrency.fs.FileSystem;
 import bsa.java.concurrency.hasher.Hasher;
 import bsa.java.concurrency.image.dto.SearchResponseDTO;
-import bsa.java.concurrency.image.dto.SearchResultDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,14 +17,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 public class ImageService {
 
     @Autowired
@@ -36,10 +39,12 @@ public class ImageService {
     @Autowired
     private ImageRepository imageRepository;
 
-//    @Value("${server.servlet.contextPath}")
-//    private String contextPath;
+    @Value("${path.imageFolder}")
+    private String cacheFolder;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(5);
+    @Qualifier("asyncForMethods")
+    @Autowired
+    private Executor executor;
 
     public void batchUploadImages(MultipartFile[] uploadImages) {
         Stream.of(uploadImages)
@@ -49,28 +54,41 @@ public class ImageService {
                 .forEach(imageRepository::save);
     }
 
-    private CompletableFuture<ImageEntity> createFileChain(MultipartFile file) {
+    @Async("asyncForMethods")
+    CompletableFuture<ImageEntity> createFileChain(MultipartFile file) {
         try {
+            log.info("async started in createFileChain by thread " + Thread.currentThread().getId());
             var bytes = file.getBytes();
-            return CompletableFuture.supplyAsync(() -> new ImageEntity(executorService, fileSystemService
+            return CompletableFuture.supplyAsync(() -> new ImageEntity(fileSystemService
                     , hashCalculator, bytes));
         } catch (IOException e) {
-            throw new RuntimeException();
+            throw new ImageBrokenException();
         }
     }
 
-    public List<SearchResponseDTO> searchMatches(MultipartFile file, double threshold) throws IOException {
-        return imageRepository.findPathByHash(hashCalculator.diagonalHash(file.getBytes()).join(), threshold)
-                .join()
-                .stream()
+    public List<SearchResponseDTO> searchMatches(MultipartFile file, double threshold) throws RuntimeException, IOException {
+        var list = imageRepository.findPathByHash(hashCalculator.diagonalHash(file.getBytes()).join(), threshold).join();
+        if (list.isEmpty()) {
+            executor.execute(() -> batchUploadImages(new MultipartFile[]{file}));
+        }
+        return list.stream()
                 .map(result -> new SearchResponseDTO(result.getImageId()
                         , InetAddress.getLoopbackAddress().getHostName()
                         + ":"
                         + environment.getProperty("server.port")
-                        + "/images/"
-                        + Path.of(
-                        "/" + result.getImageUrl()).getFileName()
+                        + "/" + cacheFolder + "/"
+                        + Path.of(result.getImageUrl()).getFileName()
                         , result.getMatchPercent()))
                 .collect(Collectors.toList());
+    }
+
+    public void deleteImage(UUID id) {
+        CompletableFuture.allOf(CompletableFuture.runAsync(() -> imageRepository.deleteById(id))
+                , fileSystemService.deleteFile(id)).join();
+    }
+
+    public void purgeImages() {
+        CompletableFuture.allOf(CompletableFuture.runAsync(() -> imageRepository.deleteAll())
+                , fileSystemService.purge()).join();
     }
 }

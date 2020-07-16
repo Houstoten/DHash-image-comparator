@@ -20,5 +20,5 @@ public interface FileSystem {
 
     CompletableFuture<Void> deleteFile(UUID fileName);
 
-
+    CompletableFuture<Void> purge();
 }
