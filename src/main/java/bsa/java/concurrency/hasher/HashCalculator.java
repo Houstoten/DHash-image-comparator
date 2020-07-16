@@ -2,6 +2,8 @@ package bsa.java.concurrency.hasher;
 
 import bsa.java.concurrency.exception.ImageBrokenException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +13,15 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Service
 @Slf4j
 public class HashCalculator implements Hasher {
+
+    @Qualifier("asyncForMethods")
+    @Autowired
+    private Executor executor;
 
     @Async("asyncForMethods")
     public CompletableFuture<Long> diagonalHash(byte[] image) {
@@ -42,6 +49,6 @@ public class HashCalculator implements Hasher {
             } catch (IOException e) {
                 throw new ImageBrokenException();
             }
-        });
+        }, executor);
     }
 }
